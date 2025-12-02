@@ -1,56 +1,177 @@
-<!DOCTYPE html>
+```html
+<!doctype html>
 <html lang="en">
-
 <head>
-  <!-- 
-      This is an HTML comment
-      You can write text in a comment and the content won't be visible in the page
-    -->
-
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="https://glitch.com/favicon.ico" />
-
-  <!--
-      This is the page head - it contains info the browser uses
-      Like the title, which appears on the browser tab but not inside the page
-      Further down you'll see the content that displays in the page
-    -->
-  <title>Hello World!</title>
-
-  <!-- The website stylesheet -->
-  <link rel="stylesheet" href="/style.css" />
-
-  <!-- The website JavaScript file -->
-  <script src="/script.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lily AI Companion - Offline + Continuous Voice</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      text-align: center;
+      padding: 20px;
+      color: white;
+    }
+    .chat-area {
+      flex: 1;
+      background: white;
+      border-radius: 12px;
+      margin: 10px;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .message {
+      padding: 10px;
+      border-radius: 12px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+    .user-message { background: #e0f7fa; align-self: flex-end; }
+    .ai-message { background: #f1f1f1; align-self: flex-start; }
+    .code-block {
+      background: #272822;
+      color: #f8f8f2;
+      padding: 10px;
+      border-radius: 8px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-top: 5px;
+    }
+    .input-area {
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      gap: 10px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 20px;
+      border-radius: 20px;
+      border: none;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #sendButton { background: #4CAF50; }
+    #jokeButton { background: #ff9800; }
+    #voiceButton { background: #2196F3; }
+  </style>
 </head>
-
 <body>
-  <!--
-      The body includes the content you see in the page
-      Each element is defined using tags, like this <div></div>
-      The attributes like class="wrapper" let us style elements in the CSS
-    -->
-  <div class="wrapper">
-    <div class="content" role="main">
-      <h1 class="title">Oh hi website!</h1>
-      <img src="/cool-website.svg" class="illustration" alt="cool website" />
-      <div class="instructions">
-        <p>
-          Fork <a href="https://github.com/glitchdotcom/website-to-compute">this project</a> and open it in a GitHub Codespace.
-        </p>
-        <p> Follow the steps in the README to deploy your new website to Fastly in a few steps!
-        </p>
-
-      </div>
-
-      <footer class="footer">
-        <div>
-          <a class="remix" href="https://github.com/glitchdotcom/website-to-compute">🚧 Get your own site</a>
-        </div>
-      </footer>
-    </div>
+  <div class="header">
+    <h1>Lily AI Companion</h1>
+    <p style="color:white;">Offline Mode + Continuous Voice Listening</p>
   </div>
-</body>
+  <div class="chat-area" id="chatArea">
+    <div style="text-align:center;color:#666;">💭 Hi! I'm Lily. Say "talk to me" for voice mode.</div>
+  </div>
+  <div class="input-area">
+    <input id="messageInput" type="text" placeholder="Type your message...">
+    <button id="sendButton" type="button">Send</button>
+    <button id="jokeButton" type="button">Tell me a joke</button>
+    <button id="voiceButton" type="button">🎤 Voice</button>
+  </div>
 
+<script>
+  const chatArea = document.getElementById('chatArea');
+  const messageInput = document.getElementById('messageInput');
+  const sendButton = document.getElementById('sendButton');
+  const jokeButton = document.getElementById('jokeButton');
+  const voiceButton = document.getElementById('voiceButton');
+
+  let voiceMode = false;
+
+  function addMessage(text, sender, isCode = false) {
+    const div = document.createElement('div');
+    div.className = `message ${sender}-message`;
+    if (isCode) {
+      const codeBlock = document.createElement('div');
+      codeBlock.className = 'code-block';
+      codeBlock.textContent = text;
+      div.appendChild(codeBlock);
+    } else {
+      div.textContent = text;
+    }
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  function getOfflineResponse(userMessage) {
+    const lower = userMessage.toLowerCase();
+    if (lower.includes("joke")) return "Why did the computer go to therapy? It had too many bugs! 😂";
+    if (lower.includes("code")) return "Here's a simple JavaScript snippet:\nfunction greet(){console.log('Hello!');}";
+    if (lower.includes("sad")) return "I'm sorry you're feeling sad. You're not alone—I’m here for you.";
+    if (lower.includes("happy")) return "That’s great! I’m happy for you!";
+    if (lower.includes("talk to me")) {
+      voiceMode = true;
+      return "Voice mode activated! I'm listening continuously.";
+    }
+    return "I hear you. Tell me more!";
+  }
+
+  function speak(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    speechSynthesis.speak(utterance);
+  }
+
+  function startContinuousVoiceInput() {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.start();
+
+    recognition.onresult = (event) => {
+      const voiceText = event.results[event.results.length - 1][0].transcript;
+      addMessage(voiceText, 'user');
+      const response = getOfflineResponse(voiceText);
+      addMessage(response, 'ai');
+      if (voiceMode) speak(response);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Voice recognition error:", event.error);
+    };
+  }
+
+  sendButton.addEventListener('click', () => {
+    const message = messageInput.value.trim();
+    if (!message) return;
+    messageInput.value = '';
+    addMessage(message, 'user');
+    const response = getOfflineResponse(message);
+    addMessage(response, 'ai');
+    if (voiceMode) speak(response);
+  });
+
+  jokeButton.addEventListener('click', () => {
+    const response = getOfflineResponse("joke");
+    addMessage(response, 'ai');
+    if (voiceMode) speak(response);
+  });
+
+  voiceButton.addEventListener('click', () => {
+    startContinuousVoiceInput();
+    addMessage("Listening... Say 'talk to me' to activate voice responses.", 'ai');
+  });
+</script>
+</body>
 </html>
+```
